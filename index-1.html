@@ -1,0 +1,95 @@
+<script type='module'>
+    /*  https://threejsfundamentals.org/threejs/lessons/threejs-fundamentals.html */
+    
+    import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+
+    var canvas  = null;
+    var renderer = null;
+    var camera = null;
+    var scene = null;
+
+    var obj = {};
+    
+    var scale = 1;
+
+
+    window.addEventListener('load', function(){
+        canvas = document.querySelector('#canvas');
+        adjust_title_canvas();
+
+
+        scene = new THREE.Scene();
+
+        const boxWidth = 1;
+        const boxHeight = 1;
+        const boxDepth = 1;
+        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+
+        const material = new THREE.MeshPhongMaterial({color: 0x44aa88});  // greenish blue
+
+        obj.cube = new THREE.Mesh(geometry, material);
+        scene.add(obj.cube);
+
+        {
+            const color = 0xFFFFFF;
+            const intensity = 1;
+            const light = new THREE.DirectionalLight(color, intensity);
+            light.position.set(-1, 2, 4);
+            scene.add(light);
+        }
+
+        requestAnimationFrame(render);
+    });
+
+    window.addEventListener('resize', e=>{
+        adjust_title_canvas();
+        //window.requestAnimationFrame(update_logo)
+    });
+
+    function render(time) {
+        time *= 0.001;  // convert time to seconds
+
+        //obj.cube.rotation.x = time;
+        obj.cube.rotation.y = time;
+
+        camera.position.z = 2;
+
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+    }
+
+    function adjust_title_canvas(){
+
+        //get the device / pixel ratio
+        // for high-res devices where media resolution != physical resolution
+        //e.g. retina display, this value will be greater than 1.
+        scale = window.devicePixelRatio;
+        console.log(scale);
+        //fit to screen
+        canvas.width =document.documentElement.clientWidth * scale;
+        canvas.height = 650 * scale;
+
+        canvas.style.width =  document.documentElement.clientWidth + 'px';
+        canvas.style.height = 650 + 'px';
+        renderer = new THREE.WebGLRenderer({canvas});
+
+        const aspect = canvas.width / canvas.height;
+        const fov = 75;
+        const near = 0.1;
+        const far = 5;
+        camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+        //ctx.scale(1, 1);
+    }
+
+</script>
+<style>
+    body{
+        margin: 0;
+    }
+</style>
+<body>
+    <canvas id="canvas">
+
+    </canvas>
+</body>
