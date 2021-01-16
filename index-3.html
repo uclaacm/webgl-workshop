@@ -1,12 +1,10 @@
 <script type='module'>
-    /*  https://threejsfundamentals.org/threejs/lessons/threejs-fundamentals.html 
-     * https://threejs.org/docs/#api/en/lights/shadows/DirectionalLightShadow
-     *  https://threejsfundamentals.org/threejs/lessons/threejs-shadows.html 
-     *  https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing_ssao.html
+    /*  https://threejs.org/docs/#manual/en/introduction/Loading-3D-models
      * */
     
     import * as THREE from 'https://unpkg.com/three/build/three.module.js';
-  
+    import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';
+
     var canvas  = null;
     var renderer = null;
     var camera = null;
@@ -20,8 +18,10 @@
     window.addEventListener('load', function(){
         canvas = document.querySelector('#canvas');     // get reference to canvas
         renderer = new THREE.WebGLRenderer({canvas});   // create renderer
+        renderer.shadowMap.enabled = true;              // enable shadows
 
         scene = new THREE.Scene();                      // create scene
+        scene.background = new THREE.Color('white');    // set background color
         
         /* Set up camera */
         camera = new THREE.OrthographicCamera( -0.5, 0.5, 0.5, -0.5, 0, 1000);
@@ -29,11 +29,30 @@
         camera.updateProjectionMatrix();
 
         /* set up geometry and materials */
+        const geometry_plane = new THREE.PlaneGeometry( 40, 40, 40, 40);  
         const geometry_cube = new THREE.BoxGeometry(1, 1, 2);
-        const material_gray = new THREE.MeshLambertMaterial({color: 0xE0E0E0});  // greenish blue
 
-        obj.cube = new THREE.Mesh(geometry_cube, material_gray);
-        scene.add(obj.cube);
+        const material_gray = new THREE.MeshLambertMaterial({color: 0xE0E0E0});  
+        const material_white = new THREE.MeshLambertMaterial({color: 0xFFFFFF});  
+
+        const loader = new GLTFLoader();
+        loader.load( 'cube.glb', 
+            function ( gltf ) {
+                let mesh = gltf.scene.children[0];
+                mesh.material = material_gray;
+                mesh.castShadow = true;
+                scene.add( mesh );
+            }, 
+            undefined, 
+            function ( error ) {
+                console.error( error );
+            } );
+
+        let mesh = new THREE.Mesh(geometry_plane, material_white);
+        mesh.rotation.x = -3.14/2;
+        mesh.receiveShadow = true;
+        obj.ground = mesh;
+        scene.add(obj.ground);
 
         /* Add lights */
         {
@@ -42,12 +61,22 @@
             const light = new THREE.DirectionalLight(color, intensity);
             light.position.set(0, 10, 4);
             light.target.position.set(-5, 0, 0);
+            light.castShadow = true;
             light.shadow.camera.far = 1000;
 
             scene.add(light);
             scene.add(light.target);
+            
+            const helper = new THREE.CameraHelper( light.shadow.camera );
+            scene.add( helper );
         }
 
+        {
+            const groundColor = 0xCCCCFF; 
+            const intensity = 0.4;
+            const light = new THREE.AmbientLight(groundColor, intensity);
+            scene.add(light);
+        }
         resize_canvas();
         requestAnimationFrame(render);
     });
@@ -87,11 +116,9 @@
 
         // resize the camera
         let aspect = width / height;
-        // camera.aspect = aspect; if using perspective camera 
         camera.top = 0.5 / aspect;
         camera.bottom = -0.5 / aspect;
         camera.updateProjectionMatrix();
-        
     }
 
 </script>
