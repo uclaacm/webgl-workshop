@@ -22,7 +22,7 @@
     /* Run the code once DOM has loaded */
     window.addEventListener('load', function(){
         canvas = document.querySelector('#canvas');     // get reference to canvas
-        renderer = new THREE.WebGLRenderer({canvas});   // create renderer
+        renderer = new THREE.WebGLRenderer({canvas, antialias: true});   // create renderer
         renderer.shadowMap.enabled = true;              // enable shadows
 
         scene = new THREE.Scene();                      // create scene
@@ -95,6 +95,8 @@
             light.position.set(0, 3, 4);
             light.target.position.set(0, 0, 0);
             light.castShadow = true;
+            light.shadow.mapSize.width = 4096;
+            light.shadow.mapSize.height = 4096;
             light.shadow.camera.far = 1000;
 
             scene.add(light);
