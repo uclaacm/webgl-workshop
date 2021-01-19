@@ -49,9 +49,27 @@
         const loader = new GLTFLoader();
         loader.load( 'gala_sculpture.glb', 
             function ( gltf ) {
-                obj.cube = gltf.scene;
-                console.log(gltf.scene);
-                scene.add( gltf.scene );
+                const model = gltf.scene;
+                model.position.y = 0;
+
+                /* Set mesh materials */
+                model.traverse( function ( child ) {
+                    if (child.name == 'top') {
+                        child.material = new THREE.MeshNormalMaterial();
+                        obj.rings = child;
+                    } else if (child.name == 'middle' || child.name == 'bottom') {
+                        child.material = new THREE.MeshStandardMaterial( {
+                            color: 0x8da3ba,
+                            roughness: 0.1,
+                            metalness: 0.7,
+                        } );
+                    }
+                    child.castShadow = true;
+                    child.receiveShadow = true;            
+                } );
+
+                obj.model = model;
+                scene.add( model );
                 requestAnimationFrame(render)
             }, 
             undefined, 
@@ -59,28 +77,29 @@
                 console.error( error );
             } );
 
-
+        /* Create ground */
         let mesh = new THREE.Mesh(geometry_plane, material_white);
         mesh.rotation.x = -3.14/2;
         mesh.receiveShadow = true;
         obj.ground = mesh;
         scene.add(obj.ground);
 
+        /* Add future rotation axis */
+        axis = new THREE.Vector3(0,1,0).normalize();
+
         /* Add lights */
         {
             const color = 0xFFFFFF;
             const intensity = 0.9;
             const light = new THREE.DirectionalLight(color, intensity);
-            light.position.set(0, 10, 4);
-            light.target.position.set(-5, 0, 0);
+            light.position.set(0, 3, 4);
+            light.target.position.set(0, 0, 0);
             light.castShadow = true;
             light.shadow.camera.far = 1000;
 
             scene.add(light);
             scene.add(light.target);
-            
-            const helper = new THREE.CameraHelper( light.shadow.camera );
-            // scene.add( helper );
+
         }
 
         {
@@ -101,16 +120,11 @@
     });
 
     function render(time) {
-        time *= 0.001;  
+
+        if (obj.rings) obj.rings.rotateOnWorldAxis(axis, speed);
 
         controls.update();
-        obj.cube.position.y = 0.5;
-
-        camera.position.set(5,2,8);
-        camera.lookAt(0,1,0);
-
         renderer.render(scene, camera);
-
         requestAnimationFrame(render);
     }
 
@@ -120,7 +134,7 @@
         scale = window.devicePixelRatio;
         // Set canvas resolution
         let width = document.documentElement.clientWidth;
-        let height = 650;
+        let height = document.documentElement.clientHeight;
         canvas.width = width * scale;
         canvas.height = height * scale;
        
@@ -131,9 +145,9 @@
 
         // resize the camera
         let aspect = width / height;
-        camera.top = 0.5 / aspect;
-        camera.bottom = -0.5 / aspect;
+        camera.aspect = width / height;
         camera.updateProjectionMatrix();
+
     }
 
 </script>
