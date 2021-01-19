@@ -25,7 +25,7 @@
         
         /* Set up camera */
         camera = new THREE.OrthographicCamera( -0.5, 0.5, 0.5, -0.5, 0, 1000);
-        camera.zoom = 0.1;
+        camera.zoom = 0.6;
         camera.updateProjectionMatrix();
 
         /* set up geometry and materials */
@@ -36,17 +36,18 @@
         const material_white = new THREE.MeshLambertMaterial({color: 0xFFFFFF});  
 
         const loader = new GLTFLoader();
-        loader.load( 'cube.glb', 
+        loader.load( 'gala_sculpture.glb', 
             function ( gltf ) {
-                let mesh = gltf.scene.children[0];
-                mesh.material = material_gray;
-                mesh.castShadow = true;
-                scene.add( mesh );
+                obj.cube = gltf.scene;
+                console.log(gltf.scene);
+                scene.add( gltf.scene );
+                requestAnimationFrame(render)
             }, 
             undefined, 
             function ( error ) {
                 console.error( error );
             } );
+
 
         let mesh = new THREE.Mesh(geometry_plane, material_white);
         mesh.rotation.x = -3.14/2;
@@ -68,7 +69,7 @@
             scene.add(light.target);
             
             const helper = new THREE.CameraHelper( light.shadow.camera );
-            scene.add( helper );
+            // scene.add( helper );
         }
 
         {
@@ -78,7 +79,6 @@
             scene.add(light);
         }
         resize_canvas();
-        requestAnimationFrame(render);
     });
 
     window.addEventListener('resize', e=>{
@@ -91,8 +91,8 @@
         obj.cube.rotation.y = time;
         obj.cube.position.y = 0.5;
 
-        camera.position.set(0,4,6);
-        camera.lookAt(0,0,0);
+        camera.position.set(5,2,8);
+        camera.lookAt(0,1,0);
 
         renderer.render(scene, camera);
 
