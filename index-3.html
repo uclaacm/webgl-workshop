@@ -29,7 +29,8 @@
         scene.background = new THREE.Color('white');    // set background color
         
         /* Set up camera */
-        camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100 );
+        camera = new THREE.OrthographicCamera( -0.5, 0.5, 0.5, -0.5, 0, 1000);
+        camera.zoom = 0.2;
         camera.updateProjectionMatrix();
 
         /* Set up controls */
@@ -105,10 +106,10 @@
         }
 
         {
-            const groundColor = 0xCCCCFF; 
+            const groundColor = 0xFFECCC; 
             const intensity = 0.4;
-            const light = new THREE.AmbientLight(groundColor, intensity);
-            scene.add(light);
+            const ambientLight = new THREE.AmbientLight(groundColor, intensity);
+            scene.add(ambientLight);
         }
        
         /* Initial camera position */
@@ -147,7 +148,8 @@
 
         // resize the camera
         let aspect = width / height;
-        camera.aspect = width / height;
+        camera.top = 0.5 / aspect;
+        camera.bottom = -0.5 / aspect;
         camera.updateProjectionMatrix();
 
     }
