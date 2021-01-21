@@ -4,20 +4,25 @@
     
     import * as THREE from 'https://unpkg.com/three/build/three.module.js';
     import { GLTFLoader } from 'https://unpkg.com/three/examples/jsm/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js'
 
     var canvas  = null;
     var renderer = null;
     var camera = null;
     var scene = null;
     var composer = null;
+    var controls = null;
 
     var obj = {};
     var scale = 1;
 
+    var axis = null;
+    var speed = 0.01;
+
     /* Run the code once DOM has loaded */
     window.addEventListener('load', function(){
         canvas = document.querySelector('#canvas');     // get reference to canvas
-        renderer = new THREE.WebGLRenderer({canvas});   // create renderer
+        renderer = new THREE.WebGLRenderer({canvas, antialias: true});   // create renderer
         renderer.shadowMap.enabled = true;              // enable shadows
 
         scene = new THREE.Scene();                      // create scene
@@ -25,8 +30,15 @@
         
         /* Set up camera */
         camera = new THREE.OrthographicCamera( -0.5, 0.5, 0.5, -0.5, 0, 1000);
-        camera.zoom = 0.1;
+        camera.zoom = 0.2;
         camera.updateProjectionMatrix();
+
+        /* Set up controls */
+        controls = new OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 0.5, 0 );
+        controls.update();
+        controls.enablePan = false;
+        controls.enableDamping = true;
 
         /* set up geometry and materials */
         const geometry_plane = new THREE.PlaneGeometry( 40, 40, 40, 40);  
@@ -36,49 +48,74 @@
         const material_white = new THREE.MeshLambertMaterial({color: 0xFFFFFF});  
 
         const loader = new GLTFLoader();
-        loader.load( 'cube.glb', 
+        loader.load( 'gala_sculpture.glb', 
             function ( gltf ) {
-                let mesh = gltf.scene.children[0];
-                mesh.material = material_gray;
-                mesh.castShadow = true;
-                scene.add( mesh );
+                const model = gltf.scene;
+                model.position.y = 0;
+
+                /* Set mesh materials */
+                model.traverse( function ( child ) {
+                    if (child.name == 'top') {
+                        child.material = new THREE.MeshNormalMaterial();
+                        obj.rings = child;
+                    } else if (child.name == 'middle' || child.name == 'bottom') {
+                        child.material = new THREE.MeshStandardMaterial( {
+                            color: 0x8da3ba,
+                            roughness: 0.1,
+                            metalness: 0.7,
+                        } );
+                    }
+                    child.castShadow = true;
+                    child.receiveShadow = true;            
+                } );
+
+                obj.model = model;
+                scene.add( model );
+                requestAnimationFrame(render)
             }, 
             undefined, 
             function ( error ) {
                 console.error( error );
             } );
 
+        /* Create ground */
         let mesh = new THREE.Mesh(geometry_plane, material_white);
         mesh.rotation.x = -3.14/2;
         mesh.receiveShadow = true;
         obj.ground = mesh;
         scene.add(obj.ground);
 
+        /* Add future rotation axis */
+        axis = new THREE.Vector3(0,1,0).normalize();
+
         /* Add lights */
         {
             const color = 0xFFFFFF;
             const intensity = 0.9;
             const light = new THREE.DirectionalLight(color, intensity);
-            light.position.set(0, 10, 4);
-            light.target.position.set(-5, 0, 0);
+            light.position.set(0, 3, 4);
+            light.target.position.set(0, 0, 0);
             light.castShadow = true;
+            light.shadow.mapSize.width = 2048;
+            light.shadow.mapSize.height = 2048;
             light.shadow.camera.far = 1000;
 
             scene.add(light);
             scene.add(light.target);
-            
-            const helper = new THREE.CameraHelper( light.shadow.camera );
-            scene.add( helper );
+
         }
 
         {
-            const groundColor = 0xCCCCFF; 
+            const groundColor = 0xFFECCC; 
             const intensity = 0.4;
-            const light = new THREE.AmbientLight(groundColor, intensity);
-            scene.add(light);
+            const ambientLight = new THREE.AmbientLight(groundColor, intensity);
+            scene.add(ambientLight);
         }
+       
+        /* Initial camera position */
+        camera.position.set(2.5,2,2.5);
+        camera.lookAt(0,0,0);
         resize_canvas();
-        requestAnimationFrame(render);
     });
 
     window.addEventListener('resize', e=>{
@@ -86,16 +123,11 @@
     });
 
     function render(time) {
-        time *= 0.001;  
 
-        obj.cube.rotation.y = time;
-        obj.cube.position.y = 0.5;
+        if (obj.rings) obj.rings.rotateOnWorldAxis(axis, speed);
 
-        camera.position.set(0,4,6);
-        camera.lookAt(0,0,0);
-
+        controls.update();
         renderer.render(scene, camera);
-
         requestAnimationFrame(render);
     }
 
@@ -105,7 +137,7 @@
         scale = window.devicePixelRatio;
         // Set canvas resolution
         let width = document.documentElement.clientWidth;
-        let height = 650;
+        let height = document.documentElement.clientHeight;
         canvas.width = width * scale;
         canvas.height = height * scale;
        
@@ -119,6 +151,7 @@
         camera.top = 0.5 / aspect;
         camera.bottom = -0.5 / aspect;
         camera.updateProjectionMatrix();
+
     }
 
 </script>
